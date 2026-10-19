@@ -1,0 +1,707 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Registro de simulacros</title>
+<meta name="theme-color" content="#0B6E4F">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#1E2B32; --muted:#5A6B73; --paper:#F5F7F4; --surface:#FFFFFF; --line:#D3DCD7;
+  --go:#0B6E4F; --go-ink:#FFFFFF; --go-soft:#E1F0E9; --wait:#9A6511; --wait-soft:#FBF0D9; --stop:#B42318;
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root{ --ink:#E6EDEA; --muted:#9FB0A8; --paper:#111815; --surface:#19221E; --line:#2E3A35;
+    --go:#3FBF8A; --go-ink:#0B1F17; --go-soft:#16352A; --wait:#E3B04B; --wait-soft:#372C15; --stop:#F07A6E; color-scheme:dark; }
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 "Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+header{padding:18px 18px 12px;max-width:760px;margin:0 auto}
+header h1{margin:0;font-size:1.45rem;line-height:1.2}
+header p{margin:2px 0 10px;color:var(--muted);font-size:.95rem}
+.bar{display:flex;gap:3px;height:10px}
+.bar span{flex:1;border-radius:2px;background:var(--line)}
+.bar span.ok{background:var(--go)}
+.barlab{font-size:.9rem;color:var(--muted);margin-top:6px}
+main{max-width:760px;margin:0 auto;padding:0 18px}
+.tab{display:none}.tab.on{display:block}
+h2{font-size:1.15rem;margin:22px 0 8px}
+label{display:block;font-weight:700;font-size:.95rem;margin:14px 0 4px}
+label small{font-weight:400;color:var(--muted)}
+input,select,textarea{width:100%;font:inherit;color:var(--ink);background:var(--surface);border:1.5px solid var(--line);border-radius:8px;padding:10px 12px}
+textarea{resize:vertical}
+input:focus,select:focus,textarea:focus,button:focus-visible,summary:focus-visible{outline:3px solid var(--go);outline-offset:1px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+.row3{display:grid;grid-template-columns:repeat(3,1fr);gap:0 10px}
+.btn{display:inline-block;font:inherit;font-weight:700;border:0;border-radius:8px;padding:12px 16px;background:var(--go);color:var(--go-ink);cursor:pointer;margin-top:12px}
+.btn.alt{background:transparent;color:var(--go);border:1.5px solid var(--go)}
+.btn.danger{background:transparent;color:var(--stop);border:1.5px solid var(--stop)}
+.btn.wide{width:100%}
+.paste{background:var(--surface);border:1.5px dashed var(--go);border-radius:10px;padding:12px 14px;margin-top:16px}
+.paste summary{font-weight:700;cursor:pointer}
+.paste p{margin:6px 0;color:var(--muted);font-size:.92rem}
+.times{display:grid;grid-template-columns:repeat(3,1fr);margin-top:14px;border:1.5px solid var(--line);border-radius:8px;overflow:hidden}
+.times div{padding:8px 10px;background:var(--surface)}
+.times div+div{border-left:1.5px solid var(--line)}
+.times b{display:block;font-size:1.05rem}
+.times span{font-size:.8rem;color:var(--muted)}
+.board{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:8px}
+.tile{font:inherit;text-align:left;color:var(--ink);border-radius:10px;padding:12px;cursor:pointer;min-height:84px}
+.tile.ok{background:var(--go-soft);border:2px solid var(--go)}
+.tile.wait{background:var(--wait-soft);border:2px solid var(--wait)}
+.tile.none{background:var(--surface);border:2px dashed var(--stop)}
+.tile.none em{color:var(--stop);font-style:normal;font-weight:700}
+.bar span.half{background:var(--wait)}
+.chk{display:flex;gap:10px;align-items:flex-start;margin-top:16px;font-weight:700}
+.chk input{width:22px;height:22px;flex:none;margin-top:1px}
+.chk small{display:block;font-weight:400;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.chips label{display:flex;align-items:center;gap:6px;margin:0;font-weight:400;background:var(--surface);border:1.5px solid var(--line);border-radius:999px;padding:6px 12px;cursor:pointer}
+.chips input{width:18px;height:18px;margin:0}
+.chips label:has(input:checked){border-color:var(--go);background:var(--go-soft)}
+.st-ok{color:var(--go);font-weight:700}.st-rev{color:var(--wait);font-weight:700}.st-none{color:var(--stop);font-weight:700}
+.tile b{display:block;line-height:1.25}
+.tile span{font-size:.88rem;color:var(--muted)}
+.tile.ok em{color:var(--go);font-style:normal;font-weight:700}
+.tile.wait em{color:var(--wait);font-style:normal;font-weight:700}
+.list{margin:0;padding:0;list-style:none}
+.list li{background:var(--surface);border:1.5px solid var(--line);border-radius:8px;padding:10px 12px;margin-top:8px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.list li div{min-width:0}
+.list li small{color:var(--muted);display:block}
+.list button{font:inherit;font-size:.9rem;background:none;border:1.5px solid var(--line);color:var(--ink);border-radius:6px;padding:6px 10px;cursor:pointer}
+.doc{background:var(--surface);border:1.5px solid var(--line);border-radius:10px;padding:16px;margin-top:10px}
+.doc h1{font-size:1.25rem;margin:0 0 6px}.doc h2{font-size:1.02rem;margin:18px 0 6px}
+.doc p,.doc li{font-size:.95rem}
+.scroll{overflow-x:auto}
+.doc table{border-collapse:collapse;width:100%;font-size:.85rem;min-width:620px}
+.doc th,.doc td{border:1px solid var(--line);padding:5px 6px;text-align:left;vertical-align:top}
+.doc th{background:var(--go-soft)}
+.actions{display:flex;flex-wrap:wrap;gap:0 10px}
+.note{color:var(--muted);font-size:.9rem}
+nav{position:fixed;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface);border-top:1.5px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);z-index:5}
+nav button{font:inherit;font-size:.9rem;background:none;border:0;color:var(--muted);padding:12px 4px 14px;cursor:pointer;border-top:3px solid transparent}
+nav button.on{color:var(--go);font-weight:700;border-top-color:var(--go)}
+#toast{position:fixed;left:50%;bottom:calc(86px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:8px;font-size:.95rem;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw;z-index:9}
+#toast.on{opacity:1}
+@media (prefers-reduced-motion: reduce){#toast{transition:none}}
+@media (max-width:420px){.row3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <h1 id="hTitle">Registro de simulacro</h1>
+  <p id="hSub"></p>
+  <div class="bar" id="hBar"></div>
+  <div class="barlab" id="hBarLab"></div>
+</header>
+
+<main>
+<!-- REGISTRAR -->
+<section class="tab on" id="t-reg">
+  <details class="paste" id="pasteWrap" open>
+    <summary>Pegar mensaje de WhatsApp</summary>
+    <p>Pega la respuesta del docente tal como llegó. Las líneas numeradas de la plantilla se pasan solas al formulario; revisa antes de guardar.</p>
+    <textarea id="pasteBox" rows="6" placeholder="1. Sede: …&#10;2. Docente que reporta: …"></textarea>
+    <button class="btn" type="button" id="btnParse">Llenar formulario</button>
+  </details>
+
+  <form id="frm" novalidate>
+    <h2 id="frmTitle">Nuevo reporte</h2>
+    <label for="f-sede">Sede</label>
+    <input id="f-sede" list="sedeList" autocomplete="off">
+    <datalist id="sedeList"></datalist>
+    <label for="f-docente">Docente que reporta</label>
+    <input id="f-docente">
+    <div class="row3">
+      <div><label for="f-hEvento">Alarma / evento</label><input id="f-hEvento" type="time" step="1"></div>
+      <div><label for="f-hSalida">Inicio desplazamiento</label><input id="f-hSalida" type="time" step="1"></div>
+      <div><label for="f-hLlegada">Llegada al punto</label><input id="f-hLlegada" type="time" step="1"></div>
+    </div>
+    <div class="times" id="liveTimes"></div>
+    <div class="row3">
+      <div><label for="f-total">Estudiantes en la sede</label><input id="f-total" type="number" min="0" inputmode="numeric"></div>
+      <div><label for="f-evac">Estudiantes en el punto</label><input id="f-evac" type="number" min="0" inputmode="numeric"></div>
+      <div><label for="f-adultos">Adultos evacuados</label><input id="f-adultos" type="number" min="0" inputmode="numeric"></div>
+    </div>
+    <label for="f-novedades">Heridos, ausentes o novedades</label>
+    <textarea id="f-novedades" rows="2"></textarea>
+    <label for="f-obs">Qué salió bien <small>(fortalezas)</small></label>
+    <textarea id="f-obs" rows="2"></textarea>
+    <label for="f-mejora">Qué hay que mejorar <small>(oportunidades de mejora)</small></label>
+    <textarea id="f-mejora" rows="2"></textarea>
+    <label class="chk"><input type="checkbox" id="f-revisar"><span>Pendiente de revisión<small>Márcalo si el dato llegó pero hay que confirmarlo (por ejemplo, una llamada rápida o cifras dudosas).</small></span></label>
+    <div class="row">
+      <div><label for="f-canal">Recibido por</label>
+        <select id="f-canal"><option>WhatsApp</option><option>Llamada</option><option>Presencial</option><option>Formulario</option><option>Otro</option></select></div>
+      <div><label for="f-recibido">Fecha y hora de recibido</label><input id="f-recibido" type="datetime-local"></div>
+    </div>
+    <div class="actions">
+      <button class="btn" type="submit" id="btnSave">Guardar reporte</button>
+      <button class="btn alt" type="button" id="btnCancel" hidden>Cancelar edición</button>
+    </div>
+  </form>
+</section>
+
+<!-- SEDES -->
+<section class="tab" id="t-sedes">
+  <h2>Estado por sede</h2>
+  <p class="note">Verde: reporte completo. Amarillo: llegó, pero falta revisar o completar. Rojo: sin comunicación. Toca una sede para registrarla o editarla.</p>
+  <div class="board" id="board"></div>
+  <h2>Reportes guardados</h2>
+  <ul class="list" id="repList"></ul>
+</section>
+
+<!-- INFORME -->
+<section class="tab" id="t-inf">
+  <h2>Informe</h2>
+  <p class="note">Cada vez que descargas el Word se crea una versión nueva. La versión 1 es el informe inmediato con lo que haya llegado; las siguientes agregan las sedes que se comuniquen después y las correcciones. Cuando todas las sedes estén completas, sale como informe final.</p>
+  <div class="actions">
+    <button class="btn" type="button" id="btnWord">Descargar informe Word</button>
+    <button class="btn alt" type="button" id="btnShare" hidden>Compartir Word</button>
+    <button class="btn alt" type="button" id="btnResumen">Copiar resumen para WhatsApp</button>
+    <button class="btn alt" type="button" id="btnCSV">Descargar CSV</button>
+  </div>
+  <h2>Plan de mejoramiento</h2>
+  <p class="note">Una acción por línea, separando con barras: acción | responsable | plazo | cómo se verifica. Puedes llenarlo después y descargar una versión nueva.</p>
+  <textarea id="c-acciones" rows="4" placeholder="Instalar campana audible en el salón 3 | Rector | 30 de noviembre | Prueba de sonido en el próximo simulacro"></textarea>
+  <button class="btn alt" type="button" id="btnAcc">Guardar plan de mejoramiento</button>
+  <div class="doc" id="preview"></div>
+</section>
+
+<!-- AJUSTES -->
+<section class="tab" id="t-aj">
+  <h2>Datos del evento</h2>
+  <label for="c-inst">Institución</label><input id="c-inst">
+  <label for="c-evento">Nombre del evento</label><input id="c-evento" placeholder="Simulacro de sismo">
+  <div class="row">
+    <div><label for="c-fecha">Fecha</label><input id="c-fecha" type="date"></div>
+    <div><label for="c-alarma">Hora oficial de la alarma</label><input id="c-alarma" type="time" step="1"></div>
+  </div>
+  <label for="c-resp">Responsable del informe</label><input id="c-resp">
+  <h2>Qué se está evaluando</h2>
+  <p class="note">Basado en la Circular 079 de 2026 de la UNGRD: definir antes del ejercicio el escenario, el objetivo y qué se pone a prueba.</p>
+  <div class="row">
+    <div><label for="c-tipo">Tipo de ejercicio</label><select id="c-tipo"><option>Simulacro</option><option>Simulación de escritorio</option><option>Evento real</option></select></div>
+    <div><label for="c-proteccion">Acción de protección</label><select id="c-proteccion"><option>Evacuación</option><option>Refugio en el sitio</option><option>Evacuación y refugio</option></select></div>
+  </div>
+  <label for="c-escenario">Escenario o amenaza <small>(sismo, inundación, incendio…)</small></label><input id="c-escenario">
+  <label for="c-objetivo" id="c-objetivo-lab">Objetivo específico del ejercicio</label><textarea id="c-objetivo" rows="2"></textarea>
+  <label>Qué se pone a prueba</label>
+  <div class="chips" id="c-pruebas"></div>
+  <label for="c-instrumento">Plan o instrumento que se valida</label><input id="c-instrumento">
+  <label for="c-marco">Marco del ejercicio</label><input id="c-marco">
+  <h2>Sedes</h2>
+  <label for="c-sedes">Nombres de las sedes <small>(una por línea)</small></label>
+  <textarea id="c-sedes" rows="7"></textarea>
+  <button class="btn wide" type="button" id="btnCfg">Guardar datos del evento</button>
+
+  <h2>Plantilla para docentes</h2>
+  <p class="note">Envía dos mensajes seguidos al grupo: primero las instrucciones y luego la plantilla sola. Así, cuando el docente toque Copiar, se lleva solo la plantilla.</p>
+  <div class="actions">
+    <button class="btn alt" type="button" id="btnInst">1. Copiar instrucciones</button>
+    <button class="btn alt" type="button" id="btnTpl">2. Copiar plantilla</button>
+  </div>
+
+  <h2>Respaldo</h2>
+  <p class="note">Los datos se guardan solo en este celular. Descarga el CSV como copia; también puedes cargarlo de nuevo aquí.</p>
+  <div class="actions">
+    <button class="btn alt" type="button" id="btnCSV2">Descargar CSV</button>
+    <button class="btn alt" type="button" id="btnImp">Cargar CSV</button>
+    <input type="file" id="fileImp" accept=".csv,text/csv" hidden>
+  </div>
+  <h2>Nuevo evento</h2>
+  <p class="note">Borra reportes y versiones para empezar otro simulacro. Las sedes y la institución se conservan.</p>
+  <button class="btn danger" type="button" id="btnReset">Borrar reportes y empezar de nuevo</button>
+</section>
+</main>
+
+<nav>
+  <button data-t="t-reg" class="on">Registrar</button>
+  <button data-t="t-sedes">Sedes</button>
+  <button data-t="t-inf">Informe</button>
+  <button data-t="t-aj">Ajustes</button>
+</nav>
+<div id="toast" role="status"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const pad = n => String(n).padStart(2, '0');
+const today = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; };
+const nowLocal = () => { const d = new Date(); return `${today()}T${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+const norm = s => (s || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+const esc = s => (s ?? '').toString().replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { toast('No se pudo guardar en este navegador'); } }
+};
+
+const F = [
+  { k: 'sede', l: 'Sede' },
+  { k: 'docente', l: 'Su nombre' },
+  { k: 'hEvento', l: 'Hora en que sonó la alarma o empezó el evento', t: 'time' },
+  { k: 'hSalida', l: 'Hora en que empezaron a salir', t: 'time' },
+  { k: 'hLlegada', l: 'Hora en que llegaron al punto de encuentro', t: 'time' },
+  { k: 'total', l: 'Cuántos estudiantes había en la sede', t: 'num' },
+  { k: 'evac', l: 'Cuántos estudiantes llegaron al punto de encuentro', t: 'num' },
+  { k: 'adultos', l: 'Cuántos adultos salieron (docentes y otros)', t: 'num' },
+  { k: 'novedades', l: 'Heridos o novedades (si no hubo, escriba NINGUNA)' },
+  { k: 'obs', l: 'Qué salió bien' },
+  { k: 'mejora', l: 'Qué hay que mejorar' }
+];
+
+const PRUEBAS = ['Sistema de alarma', 'Evacuación y rutas', 'Refugio en el sitio', 'Punto de encuentro y conteo de estudiantes', 'Brigadas y roles', 'Primeros auxilios', 'Comunicación entre sedes', 'Reporte de información', 'Comunicación con familias', 'Decisiones con información parcial'];
+const CFG0 = { inst: '', evento: 'Simulacro de sismo', fecha: today(), alarma: '', resp: '', sedes: [],
+  tipo: 'Simulacro', proteccion: 'Evacuación', escenario: 'Sismo', objetivo: '', pruebas: [],
+  instrumento: 'Plan Escolar de Gestión del Riesgo (PEGRD)', marco: 'Simulacro Nacional de Respuesta a Emergencias 2026, Circular UNGRD 079 de 2026', acciones: '' };
+let cfg = { ...CFG0, ...store.get('sim_cfg', {}) };
+let reps = store.get('sim_reps', []);
+let cortes = store.get('sim_cortes', []);
+let editing = null;
+const save = () => { store.set('sim_cfg', cfg); store.set('sim_reps', reps); store.set('sim_cortes', cortes); };
+
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('on'), 2600); }
+
+/* ---------- tiempos ---------- */
+function normT(s) {
+  if (!s) return '';
+  s = s.toLowerCase().replace(/\s+/g, ' ').trim();
+  let m = s.match(/(\d{1,2})\s*[:.h]\s*(\d{2})(?:\s*[:.]\s*(\d{2}))?\s*(a\.?\s*m\.?|p\.?\s*m\.?)?/);
+  let h, mi, se = null, ap;
+  if (m) { h = +m[1]; mi = +m[2]; se = m[3] != null ? +m[3] : null; ap = m[4] ? m[4][0] : null; }
+  else { m = s.match(/^(\d{1,2})\s*(a\.?\s*m\.?|p\.?\s*m\.?)/); if (!m) return ''; h = +m[1]; mi = 0; ap = m[2][0]; }
+  if (ap === 'p' && h < 12) h += 12;
+  if (ap === 'a' && h === 12) h = 0;
+  if (h > 23 || mi > 59 || (se != null && se > 59)) return '';
+  return `${pad(h)}:${pad(mi)}` + (se != null ? `:${pad(se)}` : '');
+}
+const secs = t => { if (!t) return null; const p = t.split(':').map(Number); return p[0]*3600 + p[1]*60 + (p[2] || 0); };
+const dur = (a, b) => { const x = secs(a), y = secs(b); return x == null || y == null ? null : y - x; };
+function calc(r) { const rea = dur(r.hEvento, r.hSalida), des = dur(r.hSalida, r.hLlegada), tot = dur(r.hEvento, r.hLlegada); return { rea, des, tot, bad: [rea, des, tot].some(x => x != null && x < 0) }; }
+function fmtD(d) { if (d == null) return '—'; if (d < 0) return 'revisar'; const m = Math.floor(d / 60), s = d % 60; return s ? `${m} min ${s} s` : `${m} min`; }
+const KEY_FIELDS = ['hEvento', 'hSalida', 'hLlegada', 'total', 'evac'];
+function estado(r) {
+  if (!r) return { c: 'none', t: 'Sin comunicación' };
+  if (r.revisar || calc(r).bad) return { c: 'rev', t: 'Pendiente de revisión' };
+  if (KEY_FIELDS.some(k => r[k] === '' || r[k] == null)) return { c: 'rev', t: 'Datos incompletos' };
+  return { c: 'ok', t: 'Reporte completo' };
+}
+const isNone = s => /^(ningun[ao]?|ninguna novedad|no|sin novedad(es)?|n\/?a|-|0)\.?$/i.test((s || '').trim());
+
+/* ---------- leer mensaje de WhatsApp ---------- */
+function canonSede(s) {
+  const n = norm(s); if (!n) return s;
+  const hit = cfg.sedes.find(x => norm(x) === n) || cfg.sedes.find(x => norm(x).includes(n) || n.includes(norm(x)));
+  return hit || s.trim();
+}
+// Quita la etiqueta si el docente la repitió sin dos puntos ("Sede La Esperanza" -> "La Esperanza")
+function stripLabel(f, val) {
+  const words = norm(f.l.replace(/\(.*?\)/g, '')).split(' ');
+  const v = val.replace(/\s+/g, ' ').trim();
+  for (let n = words.length; n >= 1; n--) {
+    const pre = words.slice(0, n).join(' ');
+    if (norm(v).startsWith(pre + ' ') || norm(v) === pre) return v.slice(pre.length).replace(/^[\s:=\-–.?]+/, '');
+  }
+  return v;
+}
+function parseMsg(txt) {
+  const out = {}; let last = null, waiting = null;
+  const lines = txt.split(/\r?\n/).map(r => r.replace(/[*_~]/g, '').trim()).filter(Boolean);
+  lines.forEach(line => {
+    let f = null, val = null;
+    const m = line.match(/^(\d{1,2})\s*[.)\-]\s*(?:([A-Za-zÁÉÍÓÚÑáéíóúñ¿][^:\d]*?):)?\s*(.*)$/);
+    if (m) { const fx = F[+m[1] - 1]; if (fx && !out[fx.k]) { f = fx; val = m[3]; } }
+    if (!f) {
+      const m2 = line.match(/^([A-Za-zÁÉÍÓÚÑáéíóúñ¿][^:\d]{1,70}):\s*(.*)$/);
+      if (m2) {
+        const lab = norm(m2[1]).replace(/^¿/, '');
+        const fx = F.find(x => { const l = norm(x.l); return l.startsWith(lab) || lab.startsWith(l.split(' ').slice(0, 3).join(' ')); });
+        if (fx && !out[fx.k]) { f = fx; val = m2[2]; }
+      }
+    }
+    if (f) {
+      val = stripLabel(f, val);
+      out[f.k] = val; last = f.k; waiting = val ? null : f.k;
+    } else if (waiting) {            // respondió en la línea de abajo
+      out[waiting] = line; last = waiting; waiting = null;
+    } else if (last === 'obs' || last === 'novedades' || last === 'mejora') {
+      out[last] = (out[last] ? out[last] + '\n' : '') + line;
+    }
+  });
+  // Plan B: solo mandó los datos, uno por línea, en orden
+  const filled = Object.values(out).filter(v => v !== '').length;
+  if (filled < 3) {
+    const plain = lines.filter(l => !/^reporte|^\W*$/i.test(norm(l)));
+    if (plain.length >= 5 && plain.length <= 14) {
+      plain.slice(0, F.length).forEach((l, i) => out[F[i].k] = l.replace(/^\d{1,2}\s*[.)\-]\s*/, ''));
+      if (plain.length > F.length) out.mejora += '\n' + plain.slice(F.length).join('\n');
+      out._orden = true;
+    }
+  }
+  Object.keys(out).forEach(k => { if (out[k] === '') delete out[k]; });
+  F.forEach(f => {
+    if (out[f.k] === undefined) return;
+    if (f.t === 'time') out[f.k] = normT(out[f.k]);
+    if (f.t === 'num') { const n = out[f.k].match(/\d+/); out[f.k] = n ? +n[0] : ''; }
+  });
+  if (out.sede) out.sede = canonSede(out.sede);
+  return out;
+}
+
+/* ---------- formulario ---------- */
+function blank() { return { id: null, sede: '', docente: '', hEvento: cfg.alarma || '', hSalida: '', hLlegada: '', total: '', evac: '', adultos: '', novedades: '', obs: '', mejora: '', canal: 'WhatsApp', recibido: nowLocal(), fase: null }; }
+function fillForm(r) {
+  F.forEach(f => $('#f-' + f.k).value = r[f.k] ?? '');
+  $('#f-canal').value = r.canal || 'WhatsApp';
+  $('#f-revisar').checked = !!r.revisar;
+  $('#f-recibido').value = r.recibido || nowLocal();
+  liveTimes();
+}
+function readForm() {
+  const r = {};
+  F.forEach(f => { let v = $('#f-' + f.k).value.trim(); if (f.t === 'num') v = v === '' ? '' : +v; r[f.k] = v; });
+  r.canal = $('#f-canal').value; r.recibido = $('#f-recibido').value; r.revisar = $('#f-revisar').checked;
+  return r;
+}
+function liveTimes() {
+  const c = calc(readForm());
+  $('#liveTimes').innerHTML = `<div><span>Reacción</span><b>${fmtD(c.rea)}</b></div><div><span>Desplazamiento</span><b>${fmtD(c.des)}</b></div><div><span>Total</span><b>${fmtD(c.tot)}</b></div>`;
+}
+function startEdit(id) {
+  const r = reps.find(x => x.id === id); if (!r) return;
+  editing = id; fillForm(r);
+  $('#frmTitle').textContent = 'Editar reporte'; $('#btnSave').textContent = 'Guardar cambios'; $('#btnCancel').hidden = false;
+  $('#pasteWrap').open = false; go('t-reg'); window.scrollTo(0, 0);
+}
+function resetForm(prefSede) {
+  editing = null; const b = blank(); if (prefSede) b.sede = prefSede; fillForm(b);
+  $('#frmTitle').textContent = 'Nuevo reporte'; $('#btnSave').textContent = 'Guardar reporte'; $('#btnCancel').hidden = true;
+}
+$('#frm').addEventListener('input', liveTimes);
+$('#btnParse').onclick = () => {
+  const txt = $('#pasteBox').value; if (!txt.trim()) { toast('Pega primero el mensaje del docente'); return; }
+  const p = parseMsg(txt); const orden = p._orden; delete p._orden; const n = Object.keys(p).length;
+  if (!n) { toast('No encontré líneas de la plantilla. Llena el formulario a mano.'); return; }
+  const cur = readForm(); fillForm({ ...cur, ...p });
+  toast(orden ? 'Leído por orden de líneas. Revisa con cuidado cada dato.' : `${n} de ${F.length} datos leídos. Revisa antes de guardar.`);
+};
+$('#btnCancel').onclick = () => resetForm();
+$('#frm').addEventListener('submit', e => {
+  e.preventDefault();
+  const r = readForm();
+  if (!r.sede) { toast('Falta la sede'); $('#f-sede').focus(); return; }
+  r.sede = canonSede(r.sede);
+  if (editing) {
+    const i = reps.findIndex(x => x.id === editing);
+    reps[i] = { ...reps[i], ...r, mod: !!reps[i].fase };
+    toast('Cambios guardados');
+  } else {
+    const prev = reps.find(x => norm(x.sede) === norm(r.sede));
+    if (prev && confirm(`Ya hay un reporte de ${prev.sede}. ¿Reemplazarlo?\n\nCancelar lo guarda como un reporte adicional (por ejemplo, otra jornada).`)) {
+      Object.assign(prev, r, { mod: !!prev.fase });
+    } else {
+      reps.push({ ...r, id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), fase: null });
+    }
+    toast(`Reporte de ${r.sede} guardado`);
+  }
+  save(); $('#pasteBox').value = ''; $('#pasteWrap').open = true; resetForm(); renderAll();
+});
+
+/* ---------- análisis ---------- */
+function analyze() {
+  const repSedes = [...new Set(reps.map(r => r.sede))];
+  const universe = cfg.sedes.length ? cfg.sedes : repSedes;
+  const has = s => reps.some(r => norm(r.sede) === norm(s));
+  const reported = universe.filter(has);
+  const pend = universe.filter(s => !has(s));
+  const extra = cfg.sedes.length ? repSedes.filter(s => !cfg.sedes.some(u => norm(u) === norm(s))) : [];
+  const rows = reps.map(r => ({ ...r, ...calc(r) })).sort((a, b) => a.sede.localeCompare(b.sede, 'es'));
+  const avg = k => { const v = rows.map(r => r[k]).filter(x => x != null && x >= 0); return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length) : null; };
+  const valid = rows.filter(r => r.tot != null && r.tot >= 0).sort((a, b) => a.tot - b.tot);
+  const tE = rows.reduce((a, r) => a + (+r.total || 0), 0), tV = rows.reduce((a, r) => a + (+r.evac || 0), 0);
+  return {
+    universe, reported, pend, extra, rows,
+    avgRea: avg('rea'), avgDes: avg('des'), avgTot: avg('tot'),
+    fast: valid[0], slow: valid[valid.length - 1], nValid: valid.length,
+    tE, tV,
+    nov: rows.filter(r => r.novedades && !isNone(r.novedades)),
+    diff: rows.filter(r => r.total !== '' && r.evac !== '' && +r.evac < +r.total),
+    bad: rows.filter(r => r.bad),
+    nTot: universe.length + extra.length, nRep: reported.length + extra.length
+  };
+}
+const hayCambios = () => reps.some(r => !r.fase || r.mod);
+const nextFase = () => cortes.length + (hayCambios() || !cortes.length ? 1 : 0);
+function esFinal(A) { return cfg.sedes.length && !A.pend.length && A.rows.every(r => estado(r).c === 'ok'); }
+function faseLabel(A, n) {
+  if (esFinal(A)) return `Versión ${n}: informe final`;
+  return n === 1 ? 'Versión 1: informe inmediato' : `Versión ${n}: actualización`;
+}
+const fmtTs = iso => { const d = new Date(iso); return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+const fmtFecha = f => { if (!f) return ''; const [y, m, d] = f.split('-'); return `${d}/${m}/${y}`; };
+
+function reportHTML(n, corteTs, preview) {
+  const A = analyze();
+  const pct = A.tE ? Math.round(A.tV * 100 / A.tE) : null;
+  let h = `<h1>${esc(cfg.evento || 'Simulacro')}</h1>
+  <p><b>${esc(faseLabel(A, n))}</b>${preview ? ' (vista previa)' : ''}<br>
+  ${cfg.inst ? `Institución: ${esc(cfg.inst)}<br>` : ''}Fecha del evento: ${esc(fmtFecha(cfg.fecha))}${cfg.alarma ? `, alarma a las ${esc(cfg.alarma)}` : ''}<br>
+  Corte de información: ${esc(fmtTs(corteTs))}${cfg.resp ? `<br>Responsable: ${esc(cfg.resp)}` : ''}</p>`;
+
+  const cur = cortes.find(c => c.n === n);
+  const nuevas = cur ? cur.sedes : [...new Set(reps.filter(r => !r.fase).map(r => r.sede))];
+  const corr = cur ? (cur.act || []) : [...new Set(reps.filter(r => r.fase && r.mod).map(r => r.sede))];
+  if (n > 1 && (nuevas.length || corr.length)) h += `<p><b>Esta versión agrega:</b> ${nuevas.length ? 'reportes nuevos de ' + nuevas.map(esc).join(', ') : ''}${nuevas.length && corr.length ? '; ' : ''}${corr.length ? 'datos corregidos o confirmados de ' + corr.map(esc).join(', ') : ''}.</p>`;
+  if (!esFinal(A)) h += '<p><i>Este informe se actualizará cuando se establezca comunicación con las sedes pendientes o se confirmen los datos en revisión.</i></p>';
+  const real = cfg.tipo === 'Evento real';
+  h += `<h2>1. Datos del ${real ? 'evento' : 'ejercicio'}</h2><ul>
+    <li>Tipo: ${esc(cfg.tipo)}${cfg.escenario ? `, escenario: ${esc(cfg.escenario)}` : ''}</li>
+    <li>Acción de protección: ${esc(cfg.proteccion)}</li>
+    ${cfg.objetivo ? `<li>${real ? 'Descripción' : 'Objetivo específico'}: ${esc(cfg.objetivo)}</li>` : ''}
+    ${!real && cfg.pruebas.length ? `<li>Aspectos puestos a prueba: ${cfg.pruebas.map(esc).join(', ')}</li>` : ''}
+    ${cfg.instrumento ? `<li>Plan o instrumento ${real ? 'activado' : 'validado'}: ${esc(cfg.instrumento)}</li>` : ''}
+    ${cfg.marco && !real ? `<li>Marco: ${esc(cfg.marco)}</li>` : ''}</ul>`;
+
+  const all = [...A.universe, ...A.extra];
+  const cnt = { ok: 0, rev: 0, none: 0 };
+  const stRows = all.map(s => { const r = reps.find(x => norm(x.sede) === norm(s)); const e = estado(r); cnt[e.c]++; return { s, r, e }; });
+  h += `<h2>2. Estado de comunicación con las sedes</h2><ul>
+    <li>Reporte completo: ${cnt.ok} de ${all.length}</li>
+    <li>Reportaron, pendiente de revisión o con datos incompletos: ${cnt.rev}</li>
+    <li>Sin comunicación al momento del corte: ${cnt.none}</li></ul>`;
+  h += `<div class="scroll"><table><tr><th>Sede</th><th>Estado</th><th>Recibido</th><th>Canal</th></tr>` +
+    stRows.map(({ s, r, e }) => `<tr><td>${esc(s)}</td><td class="st-${e.c}">${e.t}</td><td>${r && r.recibido ? esc(fmtTs(r.recibido)) : '—'}</td><td>${r ? esc(r.canal) : '—'}</td></tr>`).join('') + '</table></div>';
+  if (A.extra.length) h += `<p>Sedes que reportaron y no están en la lista: ${A.extra.map(esc).join(', ')}.</p>`;
+
+  h += `<h2>3. Resultados generales</h2><ul>
+    <li>Tiempo promedio de reacción (alarma a inicio del desplazamiento): ${fmtD(A.avgRea)}</li>
+    <li>Tiempo promedio de desplazamiento al punto de encuentro: ${fmtD(A.avgDes)}</li>
+    <li>Tiempo total promedio de evacuación: ${fmtD(A.avgTot)}</li>
+    ${A.fast ? `<li>Evacuación más rápida: ${esc(A.fast.sede)} (${fmtD(A.fast.tot)})</li>` : ''}
+    ${A.slow && A.nValid > 1 ? `<li>Evacuación más lenta: ${esc(A.slow.sede)} (${fmtD(A.slow.tot)})</li>` : ''}
+    <li>Estudiantes en el punto de encuentro: ${A.tV} de ${A.tE}${pct != null ? ` (${pct} %)` : ''}</li>
+  </ul>`;
+  if (A.diff.length) h += `<p>Sedes donde no todos los estudiantes aparecen en el punto de encuentro: ${A.diff.map(r => `${esc(r.sede)} (${r.evac} de ${r.total})`).join(', ')}.</p>`;
+  if (A.bad.length) h += `<p>Horas por verificar (orden inconsistente): ${A.bad.map(r => esc(r.sede)).join(', ')}.</p>`;
+
+  h += `<h2>4. Resultados por sede</h2><div class="scroll"><table><tr><th>Sede</th><th>Docente</th><th>Alarma</th><th>Salida</th><th>Llegada</th><th>Reacción</th><th>Desplaz.</th><th>Total</th><th>Estud. en punto</th><th>Adultos</th><th>Versión</th></tr>`;
+  A.rows.forEach(r => {
+    h += `<tr><td>${esc(r.sede)}</td><td>${esc(r.docente)}</td><td>${esc(r.hEvento) || '—'}</td><td>${esc(r.hSalida) || '—'}</td><td>${esc(r.hLlegada) || '—'}</td><td>${fmtD(r.rea)}</td><td>${fmtD(r.des)}</td><td>${fmtD(r.tot)}</td><td>${r.evac !== '' ? r.evac : '—'}${r.total !== '' ? ' de ' + r.total : ''}</td><td>${r.adultos !== '' ? r.adultos : '—'}</td><td>${r.fase || n}</td></tr>`;
+  });
+  A.pend.forEach(s => { h += `<tr><td>${esc(s)}</td><td colspan="10">Sin comunicación al momento del corte</td></tr>`; });
+  h += '</table></div>';
+
+  h += '<h2>5. Novedades</h2>';
+  h += A.nov.length ? '<ul>' + A.nov.map(r => `<li><b>${esc(r.sede)}:</b> ${esc(r.novedades).replace(/\n/g, '<br>')}</li>`).join('') + '</ul>' : '<p>No se reportaron heridos ni novedades.</p>';
+
+  const lista = (k, vacio) => { const x = A.rows.filter(r => r[k] && !isNone(r[k]));
+    return x.length ? '<ul>' + x.map(r => `<li><b>${esc(r.sede)}:</b> ${esc(r[k]).replace(/\n/g, '<br>')}</li>`).join('') + '</ul>' : `<p>${vacio}</p>`; };
+  h += '<h2>6. Fortalezas identificadas</h2>' + lista('obs', 'Sin fortalezas registradas.');
+  h += '<h2>7. Oportunidades de mejora</h2>' + lista('mejora', 'Sin oportunidades de mejora registradas.');
+  const acc = (cfg.acciones || '').split('\n').map(l => l.trim()).filter(Boolean).map(l => l.split('|').map(x => x.trim()));
+  h += '<h2>8. Plan de mejoramiento</h2><div class="scroll"><table><tr><th>Acción</th><th>Responsable</th><th>Plazo</th><th>Cómo se verifica</th></tr>' +
+    (acc.length ? acc.map(a => `<tr><td>${esc(a[0])}</td><td>${esc(a[1] || '')}</td><td>${esc(a[2] || '')}</td><td>${esc(a[3] || '')}</td></tr>`).join('')
+      : '<tr><td>&nbsp;</td><td></td><td></td><td></td></tr>'.repeat(3)) + '</table></div>';
+
+  h += '<h2>9. Conclusiones</h2><p>&nbsp;</p><p>&nbsp;</p>';
+  const verTxt = (sedes, act) => [sedes.length ? 'nuevas: ' + sedes.map(esc).join(', ') : '', act && act.length ? 'actualizadas: ' + act.map(esc).join(', ') : ''].filter(Boolean).join('; ') || 'sin cambios';
+  h += '<h2>10. Historial de versiones del informe</h2><ul>';
+  cortes.forEach(c => { h += `<li>Versión ${c.n}, ${esc(fmtTs(c.ts))}: ${verTxt(c.sedes, c.act)}</li>`; });
+  if (preview && hayCambios()) h += `<li>Versión ${n} (al descargar): ${verTxt(nuevas, corr)}</li>`;
+  h += '</ul>';
+
+  h += `<p><br><br>_____________________________<br>${esc(cfg.resp || 'Responsable')}</p>`;
+  return h;
+}
+
+function closeFase() {
+  const nuevos = reps.filter(r => !r.fase), cambios = reps.filter(r => r.fase && r.mod);
+  if (!nuevos.length && !cambios.length && cortes.length) return { n: cortes.length, ts: cortes[cortes.length - 1].ts };
+  const n = cortes.length + 1, ts = new Date().toISOString();
+  nuevos.forEach(r => r.fase = n); cambios.forEach(r => r.mod = false);
+  cortes.push({ n, ts, sedes: [...new Set(nuevos.map(r => r.sede))], act: [...new Set(cambios.map(r => r.sede))] });
+  save(); return { n, ts };
+}
+
+function wordBlob() {
+  const { n, ts } = closeFase();
+  const body = reportHTML(n, ts, false);
+  const html = `\ufeff<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>Informe</title>
+  <style>body{font-family:Calibri,Arial,sans-serif;font-size:11pt}h1{font-size:16pt;color:#0B6E4F}h2{font-size:12.5pt;color:#0B6E4F;margin-top:14pt}table{border-collapse:collapse;width:100%}th,td{border:1px solid #888;padding:3pt;font-size:9pt;vertical-align:top}th{background:#E1F0E9}</style></head><body>${body}</body></html>`;
+  const name = `Informe_${(cfg.evento || 'simulacro').replace(/[^\wáéíóúñÁÉÍÓÚÑ]+/g, '_')}_${cfg.fecha || today()}_v${n}.doc`;
+  return { blob: new Blob([html], { type: 'application/msword' }), name };
+}
+function download(blob, name) {
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+}
+$('#btnWord').onclick = () => { if (!reps.length) { toast('Aún no hay reportes'); return; } const w = wordBlob(); download(w.blob, w.name); renderAll(); toast('Informe descargado'); };
+$('#btnShare').onclick = async () => {
+  if (!reps.length) { toast('Aún no hay reportes'); return; }
+  const w = wordBlob(); const file = new File([w.blob], w.name, { type: 'application/msword' });
+  try { await navigator.share({ files: [file], title: w.name }); } catch (e) { if (e.name !== 'AbortError') download(w.blob, w.name); }
+  renderAll();
+};
+try { $('#btnShare').hidden = !(navigator.canShare && navigator.canShare({ files: [new File(['x'], 'x.doc', { type: 'application/msword' })] })); } catch (e) {}
+
+function resumen() {
+  const A = analyze(), n = nextFase();
+  const L = [`*${cfg.evento || 'Simulacro'}, ${fmtFecha(cfg.fecha)}*`, faseLabel(A, n), '',
+    `Sedes que reportaron: ${A.nRep} de ${A.nTot}`];
+  const rev = A.rows.filter(r => estado(r).c === 'rev').map(r => r.sede);
+  if (rev.length) L.push(`En revisión o incompletas: ${[...new Set(rev)].join(', ')}`);
+  if (A.pend.length) L.push(`Sin comunicación: ${A.pend.join(', ')}`);
+  L.push(`Tiempo total promedio: ${fmtD(A.avgTot)}`);
+  if (A.fast) L.push(`Más rápida: ${A.fast.sede} (${fmtD(A.fast.tot)})`);
+  if (A.slow && A.nValid > 1) L.push(`Más lenta: ${A.slow.sede} (${fmtD(A.slow.tot)})`);
+  L.push(`Estudiantes en punto de encuentro: ${A.tV} de ${A.tE}`);
+  L.push(A.nov.length ? `Novedades en: ${A.nov.map(r => r.sede).join(', ')}` : 'Sin heridos ni novedades reportadas');
+  const nm = A.rows.filter(r => r.mejora && !isNone(r.mejora)).length;
+  if (nm) L.push(`Oportunidades de mejora reportadas por ${nm} sede(s); detalle en el informe.`);
+  return L.join('\n');
+}
+async function copy(txt, ok) {
+  try { await navigator.clipboard.writeText(txt); toast(ok); }
+  catch (e) { const t = document.createElement('textarea'); t.value = txt; document.body.appendChild(t); t.select(); try { document.execCommand('copy'); toast(ok); } catch (_) { toast('No se pudo copiar'); } t.remove(); }
+}
+$('#btnResumen').onclick = () => copy(resumen(), 'Resumen copiado');
+
+function instrucciones() {
+  const ev = cfg.evento || 'simulacro';
+  return [`📋 *Reporte del ${ev.toLowerCase()}*`, '',
+    'Cuando termine el ejercicio, necesito un reporte de su sede. Es muy rápido:', '',
+    '*Paso 1.* En el siguiente mensaje, mantenga el dedo presionado y toque *Copiar*.',
+    '*Paso 2.* Abra mi chat *personal* (no este grupo) y pegue el mensaje.',
+    '*Paso 3.* Escriba cada respuesta *después de los dos puntos (:)*, en la misma línea.',
+    '*Paso 4.* No borre los números. Envíe.', '',
+    '✅ Así debe quedar una línea:',
+    '3. Hora en que sonó la alarma o empezó el evento: 9:00 am', '',
+    '⏱️ Anote las horas *con minutos* apenas pasen las cosas (en papel o en el celular). Si no sabe un dato, deje esa línea vacía.',
+    '📶 Si no tiene señal, deje el mensaje escrito y envíelo cuando pueda. Llegue cuando llegue, sirve.',
+    '🎤 Si se le complica escribir, mándeme un *audio* diciendo los datos en el mismo orden.'].join('\n');
+}
+function plantilla() {
+  return [`REPORTE ${(cfg.evento || 'SIMULACRO').toUpperCase()}`, ...F.map((f, i) => `${i + 1}. ${f.l}: `)].join('\n');
+}
+$('#btnInst').onclick = () => copy(instrucciones(), 'Mensaje 1 copiado. Pégalo en el grupo y luego copia el mensaje 2.');
+$('#btnTpl').onclick = () => copy(plantilla(), 'Mensaje 2 copiado. Pégalo justo después de las instrucciones.');
+
+/* ---------- CSV ---------- */
+const CSV_COLS = [['id', 'ID'], ...F.map(f => [f.k, f.l]), ['canal', 'Recibido por'], ['recibido', 'Fecha de recibido'], ['fase', 'Versión'], ['revisar', 'Pendiente de revisión']];
+function csvText() {
+  const q = v => { v = (v ?? '').toString(); return /[;"\n\r]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v; };
+  const head = [...CSV_COLS.map(c => c[1]), 'Reacción (min)', 'Desplazamiento (min)', 'Total (min)'];
+  const rows = reps.map(r => { const c = calc(r); const m = x => x == null ? '' : (x / 60).toFixed(2).replace('.', ',');
+    return [...CSV_COLS.map(col => r[col[0]]), m(c.rea), m(c.des), m(c.tot)]; });
+  return '\ufeff' + [head, ...rows].map(r => r.map(q).join(';')).join('\r\n');
+}
+function csvDl() { if (!reps.length) { toast('Aún no hay reportes'); return; } download(new Blob([csvText()], { type: 'text/csv;charset=utf-8' }), `reportes_${cfg.fecha || today()}.csv`); }
+$('#btnCSV').onclick = csvDl; $('#btnCSV2').onclick = csvDl;
+function parseCSV(text) {
+  text = text.replace(/^\ufeff/, ''); const rows = []; let row = [], f = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"') { if (text[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
+    else if (c === '"') q = true;
+    else if (c === ';') { row.push(f); f = ''; }
+    else if (c === '\n') { row.push(f); rows.push(row); row = []; f = ''; }
+    else if (c !== '\r') f += c;
+  }
+  if (f || row.length) { row.push(f); rows.push(row); }
+  return rows;
+}
+$('#btnImp').onclick = () => $('#fileImp').click();
+$('#fileImp').onchange = async e => {
+  const file = e.target.files[0]; if (!file) return;
+  const rows = parseCSV(await file.text());
+  if (!rows.length || rows[0][0] !== 'ID') { toast('Ese CSV no es un respaldo de esta app'); return; }
+  let n = 0;
+  rows.slice(1).forEach(cells => {
+    if (!cells[0]) return;
+    const r = {}; CSV_COLS.forEach((c, i) => r[c[0]] = cells[i] ?? '');
+    F.filter(f => f.t === 'num').forEach(f => r[f.k] = r[f.k] === '' ? '' : +r[f.k]);
+    r.fase = r.fase ? +r.fase : null; r.revisar = r.revisar === 'true';
+    const i = reps.findIndex(x => x.id === r.id); if (i >= 0) reps[i] = r; else reps.push(r); n++;
+  });
+  const maxF = Math.max(0, ...reps.map(r => r.fase || 0));
+  for (let k = cortes.length + 1; k <= maxF; k++) cortes.push({ n: k, ts: new Date().toISOString(), sedes: [...new Set(reps.filter(r => r.fase === k).map(r => r.sede))] });
+  save(); renderAll(); toast(`${n} reportes cargados`); e.target.value = '';
+};
+
+/* ---------- ajustes ---------- */
+const CFG_TXT = ['inst', 'evento', 'fecha', 'alarma', 'resp', 'tipo', 'proteccion', 'escenario', 'objetivo', 'instrumento', 'marco'];
+function objLabel() { $('#c-objetivo-lab').textContent = $('#c-tipo').value === 'Evento real' ? 'Descripción breve de lo ocurrido' : 'Objetivo específico del ejercicio'; }
+function renderCfg() {
+  CFG_TXT.forEach(k => $('#c-' + k).value = cfg[k] || '');
+  $('#c-sedes').value = cfg.sedes.join('\n'); $('#c-acciones').value = cfg.acciones || '';
+  $('#c-pruebas').innerHTML = PRUEBAS.map(p => `<label><input type="checkbox" value="${esc(p)}"${cfg.pruebas.includes(p) ? ' checked' : ''}>${esc(p)}</label>`).join('');
+  objLabel();
+}
+$('#c-tipo').onchange = objLabel;
+$('#btnAcc').onclick = () => { cfg.acciones = $('#c-acciones').value; save(); renderPreview(); toast('Plan de mejoramiento guardado'); };
+$('#btnCfg').onclick = () => {
+  const nv = {}; CFG_TXT.forEach(k => nv[k] = $('#c-' + k).value.trim());
+  cfg = { ...cfg, ...nv, pruebas: [...document.querySelectorAll('#c-pruebas input:checked')].map(i => i.value),
+    sedes: [...new Set($('#c-sedes').value.split('\n').map(s => s.trim()).filter(Boolean))] };
+  save(); renderAll(); if (!editing && !$('#f-hEvento').value) $('#f-hEvento').value = cfg.alarma; toast('Datos del evento guardados');
+};
+$('#btnReset').onclick = () => {
+  if (!reps.length) { toast('No hay reportes que borrar'); return; }
+  if (!confirm('Se borrarán todos los reportes y versiones de este evento. ¿Descargaste el CSV de respaldo?')) return;
+  reps = []; cortes = []; save(); resetForm(); renderAll(); toast('Listo para un nuevo evento');
+};
+
+/* ---------- vistas ---------- */
+function renderHeader() {
+  const A = analyze();
+  $('#hTitle').textContent = cfg.evento || 'Registro de simulacro';
+  $('#hSub').textContent = [cfg.inst, fmtFecha(cfg.fecha)].filter(Boolean).join(', ');
+  let nOk = 0, nRev = 0;
+  $('#hBar').innerHTML = A.universe.map(s => { const e = estado(reps.find(x => norm(x.sede) === norm(s))); if (e.c === 'ok') nOk++; if (e.c === 'rev') nRev++;
+    return `<span class="${e.c === 'ok' ? 'ok' : e.c === 'rev' ? 'half' : ''}" title="${esc(s)}"></span>`; }).join('') || '<span></span>';
+  const nNone = A.universe.length - nOk - nRev;
+  $('#hBarLab').textContent = A.universe.length ? `${nOk} completas, ${nRev} en revisión, ${nNone} sin comunicación` : 'Agrega tus sedes en Ajustes para ver quién falta por reportar';
+  $('#sedeList').innerHTML = cfg.sedes.map(s => `<option value="${esc(s)}">`).join('');
+}
+function renderBoard() {
+  const A = analyze();
+  const all = [...A.universe, ...A.extra];
+  $('#board').innerHTML = all.length ? all.map(s => {
+    const r = reps.find(x => norm(x.sede) === norm(s));
+    if (!r) return `<button class="tile none" data-sede="${esc(s)}"><b>${esc(s)}</b><em>Sin comunicación</em></button>`;
+    const c = calc(r), e = estado(r);
+    return `<button class="tile ${e.c === 'ok' ? 'ok' : 'wait'}" data-id="${r.id}"><b>${esc(s)}</b><em>${e.c === 'ok' ? fmtD(c.tot) : e.t}</em><br><span>${r.evac !== '' ? r.evac : '?'}${r.total !== '' ? ' de ' + r.total : ''} estudiantes</span></button>`;
+  }).join('') : '<p class="note">Sin sedes todavía. Agrégalas en Ajustes.</p>';
+  $('#board').querySelectorAll('.tile').forEach(b => b.onclick = () => b.dataset.id ? startEdit(b.dataset.id) : (resetForm(b.dataset.sede), go('t-reg')));
+  $('#repList').innerHTML = reps.length ? [...reps].sort((a, b) => (b.recibido || '').localeCompare(a.recibido || '')).map(r =>
+    `<li><div><b>${esc(r.sede)}</b><small>${esc(r.docente || 'Sin docente')}, ${esc(r.canal)}${r.recibido ? ', ' + esc(fmtTs(r.recibido)) : ''}${r.fase ? ', versión ' + r.fase + (r.mod ? ' (con cambios)' : '') : ', aún no enviado'}</small></div>
+     <span><button data-e="${r.id}">Editar</button> <button data-d="${r.id}">Borrar</button></span></li>`).join('') : '<li><div>Aún no hay reportes.</div></li>';
+  $('#repList').querySelectorAll('[data-e]').forEach(b => b.onclick = () => startEdit(b.dataset.e));
+  $('#repList').querySelectorAll('[data-d]').forEach(b => b.onclick = () => {
+    const r = reps.find(x => x.id === b.dataset.d);
+    if (confirm(`¿Borrar el reporte de ${r.sede}?`)) { reps = reps.filter(x => x.id !== r.id); save(); renderAll(); }
+  });
+}
+function renderPreview() { $('#preview').innerHTML = reps.length ? reportHTML(nextFase(), new Date().toISOString(), true) : '<p>Cuando guardes el primer reporte, aquí verás el informe.</p>'; }
+function renderAll() { renderHeader(); renderBoard(); renderPreview(); }
+
+function go(t) {
+  document.querySelectorAll('.tab').forEach(s => s.classList.toggle('on', s.id === t));
+  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.t === t));
+  if (t === 't-inf') renderPreview();
+}
+document.querySelectorAll('nav button').forEach(b => b.onclick = () => { go(b.dataset.t); window.scrollTo(0, 0); });
+
+renderCfg(); resetForm(); renderAll();
+if (!cfg.sedes.length) go('t-aj');
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+</script>
+</body>
+</html>
