@@ -122,9 +122,14 @@ nav button.on{color:var(--go);font-weight:700;border-top-color:var(--go)}
     <input id="f-docente">
     <div class="row3">
       <div><label for="f-hEvento">Alarma / evento</label><input id="f-hEvento" type="time" step="1"></div>
+      <div><label for="f-protegio">Se protegieron en el lugar</label><select id="f-protegio"><option value="">Sin dato</option><option>Sí</option><option>No</option><option>Parcial</option></select></div>
+      <div><label for="f-evacuo">Hubo evacuación</label><select id="f-evacuo"><option value="">Sin dato</option><option>Sí</option><option>No</option></select></div>
+    </div>
+    <div class="row">
       <div><label for="f-hSalida">Inicio desplazamiento</label><input id="f-hSalida" type="time" step="1"></div>
       <div><label for="f-hLlegada">Llegada al punto</label><input id="f-hLlegada" type="time" step="1"></div>
     </div>
+    <p class="note" id="noEvac" hidden>Esta sede no evacuó: las horas de salida y llegada y el conteo en el punto no son necesarios.</p>
     <div class="times" id="liveTimes"></div>
     <div class="row3">
       <div><label for="f-total">Estudiantes en la sede</label><input id="f-total" type="number" min="0" inputmode="numeric"></div>
@@ -133,6 +138,9 @@ nav button.on{color:var(--go);font-weight:700;border-top-color:var(--go)}
     </div>
     <label for="f-novedades">Heridos, ausentes o novedades</label>
     <textarea id="f-novedades" rows="2"></textarea>
+    <label for="f-reaccion">Cómo reaccionaron los niños</label>
+    <input id="f-reaccion" list="reacList" autocomplete="off">
+    <datalist id="reacList"><option value="Tranquilos"><option value="Algunos asustados"><option value="Muchos asustados"></datalist>
     <label for="f-obs">Qué salió bien <small>(fortalezas)</small></label>
     <textarea id="f-obs" rows="2"></textarea>
     <label for="f-mejora">Qué hay que mejorar <small>(oportunidades de mejora)</small></label>
@@ -247,15 +255,24 @@ const F = [
   { k: 'sede', l: 'Sede' },
   { k: 'docente', l: 'Su nombre' },
   { k: 'hEvento', l: 'Hora en que sonó la alarma o empezó el evento', t: 'time' },
-  { k: 'hSalida', l: 'Hora en que empezaron a salir', t: 'time' },
-  { k: 'hLlegada', l: 'Hora en que llegaron al punto de encuentro', t: 'time' },
+  { k: 'protegio', l: '¿Los estudiantes se protegieron en el lugar (agacharse, cubrirse, agarrarse)? (SÍ/NO)', t: 'yn' },
+  { k: 'evacuo', l: '¿Hubo evacuación? (SÍ/NO)', t: 'yn' },
+  { k: 'hSalida', l: 'Hora en que empezaron a salir (si no evacuaron, deje vacío)', t: 'time' },
+  { k: 'hLlegada', l: 'Hora en que llegaron al punto de encuentro (si no evacuaron, deje vacío)', t: 'time' },
   { k: 'total', l: 'Cuántos estudiantes había en la sede', t: 'num' },
   { k: 'evac', l: 'Cuántos estudiantes llegaron al punto de encuentro', t: 'num' },
   { k: 'adultos', l: 'Cuántos adultos salieron (docentes y otros)', t: 'num' },
   { k: 'novedades', l: 'Heridos o novedades (si no hubo, escriba NINGUNA)' },
+  { k: 'reaccion', l: '¿Cómo reaccionaron los niños? (tranquilos, algunos asustados, muchos asustados)', t: 'reac' },
   { k: 'obs', l: 'Qué salió bien' },
   { k: 'mejora', l: 'Qué hay que mejorar' }
 ];
+function yn(v) { const n = norm(v).replace(/[¿?¡!.,]/g, '').trim();
+  if (/^(si|s|yes|x)\b/.test(n)) return 'Sí'; if (/^no\b/.test(n)) return 'No'; if (/parcial|algun|medio|unos/.test(n)) return 'Parcial'; return ''; }
+function reac(v) { const n = norm(v);
+  if (/mucho/.test(n)) return 'Muchos asustados'; if (/algun|poco|unos|pocos/.test(n)) return 'Algunos asustados';
+  if (/tranquil|calm|bien|normal/.test(n)) return 'Tranquilos'; return v.trim(); }
+const evacuo = r => r.evacuo === 'No' ? false : true;
 
 const PRUEBAS = ['Sistema de alarma', 'Evacuación y rutas', 'Refugio en el sitio', 'Punto de encuentro y conteo de estudiantes', 'Brigadas y roles', 'Primeros auxilios', 'Comunicación entre sedes', 'Reporte de información', 'Comunicación con familias', 'Decisiones con información parcial'];
 const CFG0 = { inst: '', evento: 'Simulacro de sismo', fecha: today(), alarma: '', resp: '', sedes: [],
@@ -286,14 +303,14 @@ const secs = t => { if (!t) return null; const p = t.split(':').map(Number); ret
 const dur = (a, b) => { const x = secs(a), y = secs(b); return x == null || y == null ? null : y - x; };
 function calc(r) { const rea = dur(r.hEvento, r.hSalida), des = dur(r.hSalida, r.hLlegada), tot = dur(r.hEvento, r.hLlegada); return { rea, des, tot, bad: [rea, des, tot].some(x => x != null && x < 0) }; }
 function fmtD(d) { if (d == null) return '—'; if (d < 0) return 'revisar'; const m = Math.floor(d / 60), s = d % 60; return s ? `${m} min ${s} s` : `${m} min`; }
-const KEY_FIELDS = ['hEvento', 'hSalida', 'hLlegada', 'total', 'evac'];
+const keyFields = r => evacuo(r) ? ['hEvento', 'evacuo', 'hSalida', 'hLlegada', 'total', 'evac'] : ['hEvento', 'evacuo', 'total'];
 function estado(r) {
   if (!r) return { c: 'none', t: 'Sin comunicación' };
   if (r.revisar || calc(r).bad) return { c: 'rev', t: 'Pendiente de revisión' };
-  if (KEY_FIELDS.some(k => r[k] === '' || r[k] == null)) return { c: 'rev', t: 'Datos incompletos' };
+  if (keyFields(r).some(k => r[k] === '' || r[k] == null)) return { c: 'rev', t: 'Datos incompletos' };
   return { c: 'ok', t: 'Reporte completo' };
 }
-const isNone = s => /^(ningun[ao]?|ninguna novedad|no|sin novedad(es)?|n\/?a|-|0)\.?$/i.test((s || '').trim());
+const isNone = s => /^(ningun[ao]?|ninguna novedad|no|nada|sin novedad(es)?|n\/?a|-|0)\.?$/i.test((s || '').trim());
 
 /* ---------- leer mensaje de WhatsApp ---------- */
 function canonSede(s) {
@@ -303,8 +320,8 @@ function canonSede(s) {
 }
 // Quita la etiqueta si el docente la repitió sin dos puntos ("Sede La Esperanza" -> "La Esperanza")
 function stripLabel(f, val) {
-  const words = norm(f.l.replace(/\(.*?\)/g, '')).split(' ');
-  const v = val.replace(/\s+/g, ' ').trim();
+  const words = norm(f.l.replace(/\(.*?\)/g, '').replace(/[¿?]/g, '')).split(' ').filter(Boolean);
+  const v = val.replace(/[¿]/g, '').replace(/\s+/g, ' ').trim();
   for (let n = words.length; n >= 1; n--) {
     const pre = words.slice(0, n).join(' ');
     if (norm(v).startsWith(pre + ' ') || norm(v) === pre) return v.slice(pre.length).replace(/^[\s:=\-–.?]+/, '');
@@ -322,7 +339,7 @@ function parseMsg(txt) {
       const m2 = line.match(/^([A-Za-zÁÉÍÓÚÑáéíóúñ¿][^:\d]{1,70}):\s*(.*)$/);
       if (m2) {
         const lab = norm(m2[1]).replace(/^¿/, '');
-        const fx = F.find(x => { const l = norm(x.l); return l.startsWith(lab) || lab.startsWith(l.split(' ').slice(0, 3).join(' ')); });
+        const fx = F.find(x => { const l = norm(x.l).replace(/[¿?]/g, ''); return l.startsWith(lab) || lab.startsWith(l.split(' ').slice(0, 3).join(' ')); });
         if (fx && !out[fx.k]) { f = fx; val = m2[2]; }
       }
     }
@@ -339,7 +356,7 @@ function parseMsg(txt) {
   const filled = Object.values(out).filter(v => v !== '').length;
   if (filled < 3) {
     const plain = lines.filter(l => !/^reporte|^\W*$/i.test(norm(l)));
-    if (plain.length >= 5 && plain.length <= 14) {
+    if (plain.length >= 5 && plain.length <= F.length + 4) {
       plain.slice(0, F.length).forEach((l, i) => out[F[i].k] = l.replace(/^\d{1,2}\s*[.)\-]\s*/, ''));
       if (plain.length > F.length) out.mejora += '\n' + plain.slice(F.length).join('\n');
       out._orden = true;
@@ -350,13 +367,15 @@ function parseMsg(txt) {
     if (out[f.k] === undefined) return;
     if (f.t === 'time') out[f.k] = normT(out[f.k]);
     if (f.t === 'num') { const n = out[f.k].match(/\d+/); out[f.k] = n ? +n[0] : ''; }
+    if (f.t === 'yn') out[f.k] = yn(out[f.k]);
+    if (f.t === 'reac') out[f.k] = reac(out[f.k]);
   });
   if (out.sede) out.sede = canonSede(out.sede);
   return out;
 }
 
 /* ---------- formulario ---------- */
-function blank() { return { id: null, sede: '', docente: '', hEvento: cfg.alarma || '', hSalida: '', hLlegada: '', total: '', evac: '', adultos: '', novedades: '', obs: '', mejora: '', canal: 'WhatsApp', recibido: nowLocal(), fase: null }; }
+function blank() { return { id: null, sede: '', docente: '', hEvento: cfg.alarma || '', hSalida: '', hLlegada: '', total: '', evac: '', adultos: '', protegio: '', evacuo: '', novedades: '', reaccion: '', obs: '', mejora: '', canal: 'WhatsApp', recibido: nowLocal(), fase: null }; }
 function fillForm(r) {
   F.forEach(f => $('#f-' + f.k).value = r[f.k] ?? '');
   $('#f-canal').value = r.canal || 'WhatsApp';
@@ -371,7 +390,8 @@ function readForm() {
   return r;
 }
 function liveTimes() {
-  const c = calc(readForm());
+  const fr = readForm(); $('#noEvac').hidden = fr.evacuo !== 'No';
+  const c = calc(fr);
   $('#liveTimes').innerHTML = `<div><span>Reacción</span><b>${fmtD(c.rea)}</b></div><div><span>Desplazamiento</span><b>${fmtD(c.des)}</b></div><div><span>Total</span><b>${fmtD(c.tot)}</b></div>`;
 }
 function startEdit(id) {
@@ -425,14 +445,18 @@ function analyze() {
   const rows = reps.map(r => ({ ...r, ...calc(r) })).sort((a, b) => a.sede.localeCompare(b.sede, 'es'));
   const avg = k => { const v = rows.map(r => r[k]).filter(x => x != null && x >= 0); return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length) : null; };
   const valid = rows.filter(r => r.tot != null && r.tot >= 0).sort((a, b) => a.tot - b.tot);
-  const tE = rows.reduce((a, r) => a + (+r.total || 0), 0), tV = rows.reduce((a, r) => a + (+r.evac || 0), 0);
+  const ev = rows.filter(evacuo);
+  const tE = ev.reduce((a, r) => a + (+r.total || 0), 0), tV = ev.reduce((a, r) => a + (+r.evac || 0), 0);
+  const tAll = rows.reduce((a, r) => a + (+r.total || 0), 0);
+  const cuenta = k => rows.reduce((o, r) => { const v = r[k] || 'Sin dato'; o[v] = (o[v] || 0) + 1; return o; }, {});
   return {
     universe, reported, pend, extra, rows,
     avgRea: avg('rea'), avgDes: avg('des'), avgTot: avg('tot'),
     fast: valid[0], slow: valid[valid.length - 1], nValid: valid.length,
     tE, tV,
     nov: rows.filter(r => r.novedades && !isNone(r.novedades)),
-    diff: rows.filter(r => r.total !== '' && r.evac !== '' && +r.evac < +r.total),
+    diff: ev.filter(r => r.total !== '' && r.evac !== '' && +r.evac < +r.total),
+    tAll, noEv: rows.filter(r => !evacuo(r)), prot: cuenta('protegio'), evc: cuenta('evacuo'), rc: cuenta('reaccion'),
     bad: rows.filter(r => r.bad),
     nTot: universe.length + extra.length, nRep: reported.length + extra.length
   };
@@ -480,22 +504,27 @@ function reportHTML(n, corteTs, preview) {
     stRows.map(({ s, r, e }) => `<tr><td>${esc(s)}</td><td class="st-${e.c}">${e.t}</td><td>${r && r.recibido ? esc(fmtTs(r.recibido)) : '—'}</td><td>${r ? esc(r.canal) : '—'}</td></tr>`).join('') + '</table></div>';
   if (A.extra.length) h += `<p>Sedes que reportaron y no están en la lista: ${A.extra.map(esc).join(', ')}.</p>`;
 
+  const cnts = o => Object.entries(o).map(([k, v]) => `${esc(k)}: ${v}`).join(', ');
   h += `<h2>3. Resultados generales</h2><ul>
+    <li>Estudiantes en las sedes que reportaron: ${A.tAll}</li>
+    <li>Se protegieron en el lugar (agacharse, cubrirse, agarrarse): ${cnts(A.prot)}</li>
+    <li>Hubo evacuación: ${cnts(A.evc)}${A.noEv.length ? ` (sin evacuación: ${A.noEv.map(r => esc(r.sede)).join(', ')})` : ''}</li>
+    <li>Cómo reaccionaron los niños: ${cnts(A.rc)}</li>
     <li>Tiempo promedio de reacción (alarma a inicio del desplazamiento): ${fmtD(A.avgRea)}</li>
     <li>Tiempo promedio de desplazamiento al punto de encuentro: ${fmtD(A.avgDes)}</li>
     <li>Tiempo total promedio de evacuación: ${fmtD(A.avgTot)}</li>
     ${A.fast ? `<li>Evacuación más rápida: ${esc(A.fast.sede)} (${fmtD(A.fast.tot)})</li>` : ''}
     ${A.slow && A.nValid > 1 ? `<li>Evacuación más lenta: ${esc(A.slow.sede)} (${fmtD(A.slow.tot)})</li>` : ''}
-    <li>Estudiantes en el punto de encuentro: ${A.tV} de ${A.tE}${pct != null ? ` (${pct} %)` : ''}</li>
+    <li>Estudiantes en el punto de encuentro (sedes que evacuaron): ${A.tV} de ${A.tE}${pct != null ? ` (${pct} %)` : ''}</li>
   </ul>`;
   if (A.diff.length) h += `<p>Sedes donde no todos los estudiantes aparecen en el punto de encuentro: ${A.diff.map(r => `${esc(r.sede)} (${r.evac} de ${r.total})`).join(', ')}.</p>`;
   if (A.bad.length) h += `<p>Horas por verificar (orden inconsistente): ${A.bad.map(r => esc(r.sede)).join(', ')}.</p>`;
 
-  h += `<h2>4. Resultados por sede</h2><div class="scroll"><table><tr><th>Sede</th><th>Docente</th><th>Alarma</th><th>Salida</th><th>Llegada</th><th>Reacción</th><th>Desplaz.</th><th>Total</th><th>Estud. en punto</th><th>Adultos</th><th>Versión</th></tr>`;
+  h += `<h2>4. Resultados por sede</h2><div class="scroll"><table><tr><th>Sede</th><th>Docente</th><th>Se protegieron</th><th>Evacuaron</th><th>Alarma</th><th>Salida</th><th>Llegada</th><th>T. reacción</th><th>Desplaz.</th><th>Total</th><th>Estud. en punto</th><th>Adultos</th><th>Cómo reaccionaron</th><th>Versión</th></tr>`;
   A.rows.forEach(r => {
-    h += `<tr><td>${esc(r.sede)}</td><td>${esc(r.docente)}</td><td>${esc(r.hEvento) || '—'}</td><td>${esc(r.hSalida) || '—'}</td><td>${esc(r.hLlegada) || '—'}</td><td>${fmtD(r.rea)}</td><td>${fmtD(r.des)}</td><td>${fmtD(r.tot)}</td><td>${r.evac !== '' ? r.evac : '—'}${r.total !== '' ? ' de ' + r.total : ''}</td><td>${r.adultos !== '' ? r.adultos : '—'}</td><td>${r.fase || n}</td></tr>`;
+    h += `<tr><td>${esc(r.sede)}</td><td>${esc(r.docente)}</td><td>${esc(r.protegio) || '—'}</td><td>${esc(r.evacuo) || '—'}</td><td>${esc(r.hEvento) || '—'}</td><td>${esc(r.hSalida) || '—'}</td><td>${esc(r.hLlegada) || '—'}</td><td>${fmtD(r.rea)}</td><td>${fmtD(r.des)}</td><td>${fmtD(r.tot)}</td><td>${!evacuo(r) ? 'No aplica' : (r.evac !== '' ? r.evac : '—') + (r.total !== '' ? ' de ' + r.total : '')}</td><td>${r.adultos !== '' ? r.adultos : '—'}</td><td>${esc(r.reaccion) || '—'}</td><td>${r.fase || n}</td></tr>`;
   });
-  A.pend.forEach(s => { h += `<tr><td>${esc(s)}</td><td colspan="10">Sin comunicación al momento del corte</td></tr>`; });
+  A.pend.forEach(s => { h += `<tr><td>${esc(s)}</td><td colspan="13">Sin comunicación al momento del corte</td></tr>`; });
   h += '</table></div>';
 
   h += '<h2>5. Novedades</h2>';
@@ -558,7 +587,10 @@ function resumen() {
   const rev = A.rows.filter(r => estado(r).c === 'rev').map(r => r.sede);
   if (rev.length) L.push(`En revisión o incompletas: ${[...new Set(rev)].join(', ')}`);
   if (A.pend.length) L.push(`Sin comunicación: ${A.pend.join(', ')}`);
-  L.push(`Tiempo total promedio: ${fmtD(A.avgTot)}`);
+  if (A.noEv.length) L.push(`No evacuaron: ${A.noEv.map(r => r.sede).join(', ')}`);
+  L.push(`Tiempo total promedio de evacuación: ${fmtD(A.avgTot)}`);
+  const asust = A.rows.filter(r => r.reaccion === 'Muchos asustados').map(r => r.sede);
+  if (asust.length) L.push(`Niños muy asustados en: ${asust.join(', ')}`);
   if (A.fast) L.push(`Más rápida: ${A.fast.sede} (${fmtD(A.fast.tot)})`);
   if (A.slow && A.nValid > 1) L.push(`Más lenta: ${A.slow.sede} (${fmtD(A.slow.tot)})`);
   L.push(`Estudiantes en punto de encuentro: ${A.tV} de ${A.tE}`);
@@ -573,16 +605,20 @@ async function copy(txt, ok) {
 }
 $('#btnResumen').onclick = () => copy(resumen(), 'Resumen copiado');
 
+function horaEjemplo() {
+  const t = cfg.alarma || '10:00'; let [h, m] = t.split(':').map(Number);
+  const ap = h >= 12 ? 'pm' : 'am'; h = h % 12 || 12; return `${h}:${pad(m)} ${ap}`;
+}
 function instrucciones() {
   const ev = cfg.evento || 'simulacro';
   return [`📋 *Reporte del ${ev.toLowerCase()}*`, '',
     'Cuando termine el ejercicio, necesito un reporte de su sede. Es muy rápido:', '',
-    '*Paso 1.* En el siguiente mensaje, mantenga el dedo presionado y toque *Copiar*.',
+    '*Paso 1.* En el siguiente mensaje (el que se envía después de este que está leyendo), mantenga el dedo presionado y toque *Copiar*.',
     '*Paso 2.* Abra mi chat *personal* (no este grupo) y pegue el mensaje.',
     '*Paso 3.* Escriba cada respuesta *después de los dos puntos (:)*, en la misma línea.',
     '*Paso 4.* No borre los números. Envíe.', '',
     '✅ Así debe quedar una línea:',
-    '3. Hora en que sonó la alarma o empezó el evento: 9:00 am', '',
+    `3. Hora en que sonó la alarma o empezó el evento: ${horaEjemplo()}`, '',
     '⏱️ Anote las horas *con minutos* apenas pasen las cosas (en papel o en el celular). Si no sabe un dato, deje esa línea vacía.',
     '📶 Si no tiene señal, deje el mensaje escrito y envíelo cuando pueda. Llegue cuando llegue, sirve.',
     '🎤 Si se le complica escribir, mándeme un *audio* diciendo los datos en el mismo orden.'].join('\n');
@@ -677,7 +713,7 @@ function renderBoard() {
     const r = reps.find(x => norm(x.sede) === norm(s));
     if (!r) return `<button class="tile none" data-sede="${esc(s)}"><b>${esc(s)}</b><em>Sin comunicación</em></button>`;
     const c = calc(r), e = estado(r);
-    return `<button class="tile ${e.c === 'ok' ? 'ok' : 'wait'}" data-id="${r.id}"><b>${esc(s)}</b><em>${e.c === 'ok' ? fmtD(c.tot) : e.t}</em><br><span>${r.evac !== '' ? r.evac : '?'}${r.total !== '' ? ' de ' + r.total : ''} estudiantes</span></button>`;
+    return `<button class="tile ${e.c === 'ok' ? 'ok' : 'wait'}" data-id="${r.id}"><b>${esc(s)}</b><em>${e.c === 'ok' ? (evacuo(r) ? fmtD(c.tot) : 'Sin evacuación') : e.t}</em><br><span>${evacuo(r) ? (r.evac !== '' ? r.evac : '?') + (r.total !== '' ? ' de ' + r.total : '') : (r.total !== '' ? r.total : '?')} estudiantes</span></button>`;
   }).join('') : '<p class="note">Sin sedes todavía. Agrégalas en Ajustes.</p>';
   $('#board').querySelectorAll('.tile').forEach(b => b.onclick = () => b.dataset.id ? startEdit(b.dataset.id) : (resetForm(b.dataset.sede), go('t-reg')));
   $('#repList').innerHTML = reps.length ? [...reps].sort((a, b) => (b.recibido || '').localeCompare(a.recibido || '')).map(r =>
